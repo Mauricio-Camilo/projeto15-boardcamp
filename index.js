@@ -75,7 +75,6 @@ app.get("/games", async (req, res) => {
         if (nome !== undefined) {
             // README: DEPOIS APLICAR SQL INJECTION NO LIKE
             const query = await connection.query(`SELECT * FROM games WHERE name LIKE '${nome}%'`);
-
             res.send(query.rows);
         }
         else {
@@ -122,7 +121,7 @@ app.get("/customers", async (req, res) => {
     const cpf = req.query.cpf;
     try {
         if (cpf !== undefined) {
-            const query = await connection.query(`SELECT * FROM customers WHERE cpf=$1', ${cpf}%'`);
+            const query = await connection.query(`SELECT * FROM customers WHERE cpf LIKE '${cpf}%'`);
             res.send(query.rows);
         }
         else {
@@ -151,7 +150,26 @@ app.get("/customers/:id", async (req, res) => {
     }
 })
 
-// FAZER UMA ROTA GET QUE BUSCA POR ID
+app.put("/customers/:id", async (req, res) => {
+    const { id } = req.params;
+    const {name, phone, cpf, birthday} = req.body;
+    try {
+        await connection.query(`
+        UPDATE customers
+        SET 
+        name = $1,
+        phone = $2,
+        cpf = $3,
+        birthday = $4
+        WHERE id=$5`, [name, phone, cpf, birthday, id]);
+        res.sendStatus(200);
+    }
+    catch (e) {
+        console.log(e);
+        res.status(500).send("Ocorreu um erro ao exibir os clientes");
+    }
+})
+
 
 // FAZER UMA ROTA PUT DOS CLIENTES ID, USAR AS MESMAS VALIDAÇÕES DO POST
 
