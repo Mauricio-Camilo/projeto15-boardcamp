@@ -43,7 +43,34 @@ app.get("/categories", async (req,res) => {
     }
 })
 
+app.post("/games", async (req,res) => {
+    const {name, image, stockTotal, categoryId, pricePerDay} = req.body;
+    // if (name === "") return res.sendStatus(400);
+    /* README: FAZER UMA BUSCA NO BANCO DE DADOS E INVALIDAR A OPERAÇÃO CASO
+    SEJA INSERIDA UMA CATEGORIA JÁ EXISTENTE */
+    try {
+        const query = await connection.query(
+            `INSERT INTO games ("name", "image", "stockTotal", "categoryId", "pricePerDay") 
+            VALUES ($1,$2,$3,$4,$5)`,
+            [name,image,stockTotal,categoryId,pricePerDay]);
+        res.send(query).status(200);
+    }
+    catch (e){
+        console.log(e);
+        res.status(500).send("Ocorreu um erro ao inserir um jogo");
+    }
+})
 
+app.get("/games", async (req,res) => {
+    try {
+        const query = await connection.query(`SELECT * FROM games`);
+        res.send(query.rows);
+    }
+    catch (e){
+        console.log(e);
+        res.status(500).send("Ocorreu um erro ao exibir as categorias");
+    }
+})
 
 app.listen(PORT, 
     () => {console.log(chalk.bold.blue(`Servidor conectado na porta ${PORT}`))});
