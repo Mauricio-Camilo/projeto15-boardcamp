@@ -45,9 +45,13 @@ app.get("/categories", async (req,res) => {
 
 app.post("/games", async (req,res) => {
     const {name, image, stockTotal, categoryId, pricePerDay} = req.body;
-    // if (name === "") return res.sendStatus(400);
+    if (name === "") return res.sendStatus(400);
+    if (stockTotal < 0) return res.sendStatus(400);
+    if (pricePerDay < 0) return res.sendStatus(400);
+
     /* README: FAZER UMA BUSCA NO BANCO DE DADOS E INVALIDAR A OPERAÇÃO CASO
-    SEJA INSERIDA UMA CATEGORIA JÁ EXISTENTE */
+    SEJA INSERIDA UM ID NÃO EXISTENTE NO BANCO DE CATEGORIAS E TAMBÉM UM JOGO
+    JÁ EXISTENTE*/
     try {
         const query = await connection.query(
             `INSERT INTO games ("name", "image", "stockTotal", "categoryId", "pricePerDay") 
@@ -62,15 +66,23 @@ app.post("/games", async (req,res) => {
 })
 
 app.get("/games", async (req,res) => {
+    const nome = req.query.name;
     try {
-        const query = await connection.query(`SELECT * FROM games`);
-        res.send(query.rows);
+        if (nome !== undefined) {
+            const query = await connection.query(`SELECT * FROM games WHERE name LIKE '${nome}%'`);
+            res.send(query.rows);
+        }
+        else {
+            const query = await connection.query(`SELECT * FROM games`);
+            res.send(query.rows);
+        }
     }
     catch (e){
         console.log(e);
         res.status(500).send("Ocorreu um erro ao exibir as categorias");
     }
 })
+
 
 app.listen(PORT, 
     () => {console.log(chalk.bold.blue(`Servidor conectado na porta ${PORT}`))});
