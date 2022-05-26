@@ -15,11 +15,11 @@ const PORT = process.env.PORT || 4000
 
 app.post("/categories", async (req,res) => {
     const {name} = req.body;
-    console.log(name);
     if (name === "") return res.sendStatus(400);
-    /* README: FAZER UMA BUSCA NO BANCO DE DADOS E INVALIDAR A OPERAÇÃO CASO
-    SEJA INSERIDA UMA CATEGORIA JÁ EXISTENTE */
     try {
+        const category = await connection.query(
+            `SELECT * FROM categories WHERE name=$1`,[name]);
+        if (category.rows.length !== 0) return res.sendStatus(409);
         const query = await connection.query(
             `INSERT INTO categories (name) 
             VALUES ($1)`,
@@ -48,7 +48,7 @@ app.post("/games", async (req,res) => {
     if (name === "") return res.sendStatus(400);
     if (stockTotal < 0) return res.sendStatus(400);
     if (pricePerDay < 0) return res.sendStatus(400);
-
+    
     /* README: FAZER UMA BUSCA NO BANCO DE DADOS E INVALIDAR A OPERAÇÃO CASO
     SEJA INSERIDA UM ID NÃO EXISTENTE NO BANCO DE CATEGORIAS E TAMBÉM UM JOGO
     JÁ EXISTENTE*/
