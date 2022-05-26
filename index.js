@@ -88,34 +88,35 @@ app.get("/games", async (req, res) => {
     }
 })
 
-// app.post("/customers", async (req, res) => {
-//     const { name, phone, cpf, birthday} = req.body;
+app.post("/customers", async (req, res) => {
+    const { name, phone, cpf, birthday} = req.body;
 
-//     // const birthdayRegex = alguma coisa
-//     // birthdayRegex.test(birthday) RETORNA TRUE OU FALSE;
+    // VALIDAÇÃO DE DATA DE NASCIMENTO, COLOCAR DEPOIS EM UM MIDDLEWARE
+    const birthdayRegex = /^[0-9]{4}-[0-9]{2}-[0-9]{2}/
+    if (!birthdayRegex.test(birthday)) return res.sendStatus(400);
 
-//     if (name === "" || cpf.length !== 11 
-//     || phone.length !== 10) return res.sendStatus(400);
+    // VALIDAÇÃO DE NOME, CPF E PHONE, COLOCAR DEPOIS EM UM MIDDLEWARE
+    if (name === "" || cpf.length !== 11 
+    || phone.length < 9 || phone.length < 12) return res.sendStatus(400);
 
-//      // README: FAZER A VALIDAÇÃO DO BIRTHDAY E DO PHONE
 
-//     try {
-//         // VALIDAÇÃO DE CPF EXISTENTE, COLOCAR DEPOIS EM UM MIDDLEWARE
-//         const cpfclient = await connection.query(
-//             `SELECT * FROM customers WHERE cpf=$1`, [cpf]);
-//         if (cpfclient.rows.length !== 0) return res.sendStatus(409);
+    try {
+        // VALIDAÇÃO DE CPF EXISTENTE, COLOCAR DEPOIS EM UM MIDDLEWARE
+        const cpfclient = await connection.query(
+            `SELECT * FROM customers WHERE cpf=$1`, [cpf]);
+        if (cpfclient.rows.length !== 0) return res.sendStatus(409);
 
-//         const query = await connection.query(
-//             `INSERT INTO customers ("name", "phone", "cpf", "birthday") 
-//             VALUES ($1,$2,$3,$4)`,
-//             [name, phone, cpf, birthday]);
-//         res.sendStatus(201);
-//     }
-//     catch (e) {
-//         console.log(e);
-//         res.status(500).send("Ocorreu um erro ao inserir um cliente");
-//     }
-// })
+        const query = await connection.query(
+            `INSERT INTO customers ("name", "phone", "cpf", "birthday") 
+            VALUES ($1,$2,$3,$4)`,
+            [name, phone, cpf, birthday]);
+        res.sendStatus(201);
+    }
+    catch (e) {
+        console.log(e);
+        res.status(500).send("Ocorreu um erro ao inserir um cliente");
+    }
+})
 
 app.get("/customers", async (req, res) => {
     const cpf = req.query.cpf;
@@ -146,13 +147,22 @@ app.get("/customers/:id", async (req, res) => {
     }
     catch (e) {
         console.log(e);
-        res.status(500).send("Ocorreu um erro ao exibir os clientes");
+        res.status(500).send("Ocorreu um erro ao exibir um cliente");
     }
 })
 
 app.put("/customers/:id", async (req, res) => {
     const { id } = req.params;
     const {name, phone, cpf, birthday} = req.body;
+
+    // VALIDAÇÃO DE DATA DE NASCIMENTO, COLOCAR DEPOIS EM UM MIDDLEWARE
+    const birthdayRegex = /^[0-9]{4}-[0-9]{2}-[0-9]{2}/
+    if (!birthdayRegex.test(birthday)) return res.sendStatus(400);
+
+    // VALIDAÇÃO DE NOME, CPF E PHONE, COLOCAR DEPOIS EM UM MIDDLEWARE
+    if (name === "" || cpf.length !== 11 
+    || phone.length < 9 || phone.length < 12) return res.sendStatus(400);
+    
     try {
         await connection.query(`
         UPDATE customers
@@ -166,14 +176,9 @@ app.put("/customers/:id", async (req, res) => {
     }
     catch (e) {
         console.log(e);
-        res.status(500).send("Ocorreu um erro ao exibir os clientes");
+        res.status(500).send("Ocorreu um erro ao atualizar dadod do cliente");
     }
-})
-
-
-// FAZER UMA ROTA PUT DOS CLIENTES ID, USAR AS MESMAS VALIDAÇÕES DO POST
-
-
+});
 
 app.listen(PORT,
     () => { console.log(chalk.bold.blue(`Servidor conectado na porta ${PORT}`)) });
