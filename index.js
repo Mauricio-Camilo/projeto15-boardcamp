@@ -43,12 +43,9 @@ app.get("/categories", async (req, res) => {
 
 app.post("/games", async (req, res) => {
     const { name, image, stockTotal, categoryId, pricePerDay } = req.body;
-    if (name === "") return res.sendStatus(400);
-    if (stockTotal < 0) return res.sendStatus(400);
-    if (pricePerDay < 0) return res.sendStatus(400);
+    if (name === "" || stockTotal < 0 || pricePerDay < 0) return res.sendStatus(400);
 
     try {
-
         // VALIDAÇÃO DE GAME EXISTENTE, COLOCAR DEPOIS EM UM MIDDLEWARE
         const game = await connection.query(
             `SELECT * FROM games WHERE name=$1`, [name]);
@@ -74,7 +71,9 @@ app.get("/games", async (req, res) => {
     const nome = req.query.name;
     try {
         if (nome !== undefined) {
+            // README: DEPOIS APLICAR SQL INJECTION NO LIKE
             const query = await connection.query(`SELECT * FROM games WHERE name LIKE '${nome}%'`);
+            
             res.send(query.rows);
         }
         else {
@@ -87,6 +86,55 @@ app.get("/games", async (req, res) => {
         res.status(500).send("Ocorreu um erro ao exibir as categorias");
     }
 })
+
+app.post("/customers", async (req, res) => {
+    const { name, phone, cpf, birthday} = req.body;
+
+    // const birthdayRegex = alguma coisa
+    // birthdayRegex.test(birthday);
+    
+    if (name === "" || cpf.length !== 11 
+    || phone.length !== 10) return res.sendStatus(400);
+
+     // README: FAZER A VALIDAÇÃO DO BIRTHDAY E DO PHONE
+
+    try {
+        // VALIDAÇÃO DE CPF EXISTENTE, COLOCAR DEPOIS EM UM MIDDLEWARE
+        const cpfclient = await connection.query(
+            `SELECT * FROM customers WHERE cpf=$1`, [cpf]);
+        if (cpfclient.rows.length !== 0) return res.sendStatus(409);
+
+        const query = await connection.query(
+            `INSERT INTO customers ("name", "phone", "cpf", "birthday") 
+            VALUES ($1,$2,$3,$4)`,
+            [name, phone, cpf, birthday]);
+        res.sendStatus(201);
+    }
+    catch (e) {
+        console.log(e);
+        res.status(500).send("Ocorreu um erro ao inserir um cliente");
+    }
+})
+
+app.get("/customers", async (req, res) => {
+    const cpf = req.query.cpf;
+    try {
+        if (cpf !== undefined) {
+            const query = await connection.query(`SELECT * FROM customers WHERE cpf LIKE '${cpf}%'`);
+            res.send(query.rows);
+        }
+        else {
+            const query = await connection.query(`SELECT * FROM customers`);
+            res.send(query.rows);
+            console.log(query.rows);
+        }
+    }
+    catch (e) {
+        console.log(e);
+        res.status(500).send("Ocorreu um erro ao exibir os clientes");
+    }
+})
+
 
 
 app.listen(PORT,
