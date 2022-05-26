@@ -13,28 +13,17 @@ dotenv.config();
 
 const PORT = process.env.PORT || 4000
 
-/* TESTE DA AULA */
-
-// const {Pool} = pg;
-
-// const db = new Pool ({
-//     host:"localhost",
-//     port: 5432,
-//     user: "postgres",
-//     password: "Mau8126705",
-//     database: "desafio_sql_b672418d"
-// })
-
-// const query = db.query('SELECT * FROM produtos');
-
-// query.then(result => {
-//     console.log(result.rows);
-// })
-
 app.post("/categories", async (req,res) => {
     const {name} = req.body;
+    console.log(name);
+    if (name === "") return res.sendStatus(400);
+    /* README: FAZER UMA BUSCA NO BANCO DE DADOS E INVALIDAR A OPERAÇÃO CASO
+    SEJA INSERIDA UMA CATEGORIA JÁ EXISTENTE */
     try {
-        const query = await connection.query(`INSERT INTO categories (name) VALUES ('${name}')`);
+        const query = await connection.query(
+            `INSERT INTO categories (name) 
+            VALUES ($1)`,
+            [name]);
         res.sendStatus(201);
     }
     catch (e){
