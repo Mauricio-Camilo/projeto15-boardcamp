@@ -5,5 +5,7 @@ const rentalsRouter = express.Router();
 
 rentalsRouter.get("/rentals", getRentals);
 rentalsRouter.post("/rentals", postRentals);
-rentalsRouter.update("/rentals", updateRentals);
-rentalsRouter.delete("/rentals", deleteRentals);
+rentalsRouter.post("/rentals/:id/return", updateRentals);
+rentalsRouter.delete("/rentals/:id", deleteRentals);
+
+export default rentalsRouter;
