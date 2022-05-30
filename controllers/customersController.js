@@ -22,7 +22,7 @@ export async function getIdCustomers (req, res) {
     const { id } = req.params;
     try {
         const clienteId = await connection.query(`SELECT * FROM customers WHERE id=$1`, [id]);
-        if (clienteId.rows.length === 0) return res.send("Id inexistente").status(404);
+        if (clienteId.rows.length === 0) return res.sendStatus(404);
         else return res.send(clienteId.rows);
     }
     catch (e) {
@@ -33,25 +33,7 @@ export async function getIdCustomers (req, res) {
 
 export async function postCustomers (req, res) {
     const { name, phone, cpf, birthday} = req.body;
-
-    // TIRAR A PARTIR DAQUI POR CONTA DO MIDDLEWARE
-
-    // VALIDAÇÃO DE DATA DE NASCIMENTO, COLOCAR DEPOIS EM UM MIDDLEWARE
-    const birthdayRegex = /^[0-9]{4}-[0-9]{2}-[0-9]{2}/
-    if (!birthdayRegex.test(birthday)) return res.sendStatus(400);
-
-    // VALIDAÇÃO DE NOME, CPF E PHONE, COLOCAR DEPOIS EM UM MIDDLEWARE
-    if (name === "" || cpf.length !== 11 
-    || phone.length < 9 || phone.length > 12) return res.sendStatus(400);
-
-    // PARAR A PARTIR DAQUI POR CONTA DO MIDDLEWARE
-
     try {
-        // VALIDAÇÃO DE CPF EXISTENTE, COLOCAR DEPOIS EM UM MIDDLEWARE
-        const cpfclient = await connection.query(
-            `SELECT * FROM customers WHERE cpf=$1`, [cpf]);
-        if (cpfclient.rows.length !== 0) return res.sendStatus(409);
-
         const query = await connection.query(
             `INSERT INTO customers ("name", "phone", "cpf", "birthday") 
             VALUES ($1,$2,$3,$4)`,
@@ -67,18 +49,6 @@ export async function postCustomers (req, res) {
 export async function updateCustomers (req, res) {
     const { id } = req.params;
     const {name, phone, cpf, birthday} = req.body;
-
-    // TIRAR A PARTIR DAQUI POR CONTA DO MIDDLEWARE
-
-    // VALIDAÇÃO DE DATA DE NASCIMENTO, COLOCAR DEPOIS EM UM MIDDLEWARE
-    const birthdayRegex = /^[0-9]{4}-[0-9]{2}-[0-9]{2}/
-    if (!birthdayRegex.test(birthday)) return res.sendStatus(400);
-
-    // VALIDAÇÃO DE NOME, CPF E PHONE, COLOCAR DEPOIS EM UM MIDDLEWARE
-    if (name === "" || cpf.length !== 11 
-    || phone.length < 9 || phone.length > 12) return res.sendStatus(400);
-
-    // PARAR A PARTIR DAQUI POR CONTA DO MIDDLEWARE
 
     try {
         await connection.query(`

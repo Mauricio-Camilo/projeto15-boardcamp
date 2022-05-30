@@ -2,8 +2,6 @@ import connection from "../database.js";
 import dayjs from "dayjs";
 
 export async function getRentals (req, res) {
-    const customer = req.query.customerId;
-    const game = req.query.gameId;
     try {
         const allRents = [];
         const query = await connection.query(`SELECT * FROM rentals`);
@@ -61,24 +59,17 @@ export async function postRentals (req, res) {
     const delayFee = null;
 
     try {
-        // VALIDAÇÃO DE DE DIAS
-        if (daysRented < 0) return res.send("Número inválido").status(400);
+        if (daysRented < 0) return res.sendStatus(400);
 
-        // VALIDAÇÃO DE ID DO GAME, COLOCAR DEPOIS EM UM MIDDLEWARE
         const idgame = await connection.query(
             `SELECT * FROM games WHERE id=$1`, [gameId]);
-        if (idgame.rows.length === 0) return res.send("Id do game inexistente").status(400);
+        if (idgame.rows.length === 0) return res.sendStatus(400);
 
         const originalPrice = idgame.rows[0].pricePerDay * daysRented;
-        const game = idgame.rows[0];
 
-
-        // VALIDAÇÃO DE ID DO CLIENTE, COLOCAR DEPOIS EM UM MIDDLEWARE
         const iduser = await connection.query(
             `SELECT * FROM customers WHERE id=$1`, [customerId]);
-        if (iduser.rows.length === 0) return res.send("Id do usuario inexistente").status(400);
-
-        const customer = iduser.rows[0];
+        if (iduser.rows.length === 0) return res.sendStatus(400);
 
         const query = await connection.query(
             `INSERT INTO rentals ("customerId", "gameId", "rentDate", "daysRented",
@@ -97,13 +88,12 @@ export async function postRentals (req, res) {
 export async function updateRentals (req, res) {
     const { id } = req.params;
     const returnDate = dayjs().format('YYYY-MM-DD');
-    try {
 
-        // VALIDAÇÃO DE ID DO GAME, COLOCAR DEPOIS EM UM MIDDLEWARE
+    try {
         const idRental = await connection.query(
             `SELECT * FROM rentals WHERE id=$1`, [id]);
-        if (idRental.rows.length === 0) return res.send("Id do aluguel inexistente").status(404);
-        if (idRental.rows[0].returnDate !== null) return res.send("Aluguel já finalizado").status(400);
+        if (idRental.rows.length === 0) return res.sendStatus(404);
+        if (idRental.rows[0].returnDate !== null) return res.sendStatus(400);
 
         const query = await connection.query(`SELECT * FROM rentals WHERE id=$1`, [id]);
         const { rentDate, daysRented, originalPrice } = query.rows[0];
@@ -131,11 +121,10 @@ export async function updateRentals (req, res) {
 export async function deleteRentals (req, res) {
     const { id } = req.params;
     try {
-        // VALIDAÇÃO DE ID DO GAME, COLOCAR DEPOIS EM UM MIDDLEWARE
         const idRental = await connection.query(
             `SELECT * FROM rentals WHERE id=$1`, [id]);
-        if (idRental.rows.length === 0) return res.send("Id do aluguel inexistente").status(404);
-        if (idRental.rows[0].returnDate === null) return res.send("Aluguel não finalizado").status(400);
+        if (idRental.rows.length === 0) return res.sendStatus(404);
+        if (idRental.rows[0].returnDate === null) return res.sendStatus(400);
 
         await connection.query(`DELETE FROM rentals WHERE id=$1`, [id]);
         res.sendStatus(200);
