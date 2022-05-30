@@ -22,7 +22,59 @@ app.use(gamesRouter);
 app.use(customersRouter);
 // app.use(rentsRouter);
 
+app.get("/rentals", async (req, res) => {
+    try {
+        const allRents = [];
+        const query = await connection.query(`SELECT * FROM rentals`);
 
+        console.log(query.rows.length);
+
+        for (let i = 0; i < query.rows.length; i ++) {
+            const { id, customerId, gameId, rentDate,
+                daysRented, returnDate, originalPrice, delayFee } = query.rows[i];
+
+            const idGame = await connection.query(
+                `SELECT * FROM games WHERE id=$1`, [query.rows[0].gameId]);
+            const game = idGame.rows[0];
+
+            const categoryName = await connection.query(
+                `SELECT * FROM categories WHERE id=$1`, [game.categoryId]);
+            const category = categoryName.rows[0];
+            console.log(category);
+
+            const idUser = await connection.query(
+                `SELECT * FROM customers WHERE id=$1`, [query.rows[0].customerId]);
+            const customer = idUser.rows[0];
+
+            let rentData = {
+                id,
+                customerId,
+                gameId,
+                rentDate,
+                daysRented,
+                returnDate,
+                originalPrice,
+                delayFee,
+                customer: {
+                    id: customer.id,
+                    name: customer.name
+                },
+                game: {
+                    id: game.id,
+                    name: game.name,
+                    categoryId: game.categoryId,
+                    categoryName: category.name
+                }
+            };
+            allRents.push(rentData);
+        }
+        res.send(allRents);
+    }
+    catch (e) {
+        console.log(e);
+        res.status(500).send("Ocorreu um erro ao exibir as categorias");
+    }
+})
 
 app.post("/rentals", async (req, res) => {
 
