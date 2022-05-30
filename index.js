@@ -130,6 +130,15 @@ app.post("/rentals/:id/return", async (req, res) => {
     const { id } = req.params;
     const returnDate = dayjs().format('YYYY-MM-DD');
     try {
+
+        // VALIDAÇÃO DE ID DO GAME, COLOCAR DEPOIS EM UM MIDDLEWARE
+        const idRental = await connection.query(
+            `SELECT * FROM rentals WHERE id=$1`, [id]);
+        console.log(idRental);
+        if (idRental.rows.length === 0) return res.send("Id do aluguel inexistente").status(404);
+        if (idRental.rows[0].returnDate !== null) return res.send("Aluguel já finalizado").status(400);
+
+
         const query = await connection.query(`SELECT * FROM rentals WHERE id=$1`, [id]);
         const { rentDate, daysRented, originalPrice } = query.rows[0];
         const dateStart = rentDate.toISOString().slice(0, 10);
@@ -154,13 +163,23 @@ app.post("/rentals/:id/return", async (req, res) => {
 
 });
 
+app.delete("/rentals/:id", async (req, res) => {
+    const { id } = req.params;
+    try {
+        // VALIDAÇÃO DE ID DO GAME, COLOCAR DEPOIS EM UM MIDDLEWARE
+        const idRental = await connection.query(
+            `SELECT * FROM rentals WHERE id=$1`, [id]);
+        if (idRental.rows.length === 0) return res.send("Id do aluguel inexistente").status(404);
+        if (idRental.rows[0].returnDate === null) return res.send("Aluguel não finalizado").status(400);
 
-
-
-
-
-
-
+        await connection.query(`DELETE FROM rentals WHERE id=$1`, [id]);
+        res.sendStatus(200);
+    }
+    catch (e) {
+        console.log(e);
+        res.status(500).send("Ocorreu um erro ao deletar um aluguel");
+    }
+});
 
 const PORT = process.env.PORT || 4000
 
