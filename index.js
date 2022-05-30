@@ -23,13 +23,20 @@ app.use(customersRouter);
 // app.use(rentsRouter);
 
 app.get("/rentals", async (req, res) => {
+    const customer = req.query.customerId;
+    const game = req.query.gameId;
+
+    // if (customer === undefined && game === undefined) {
+
+    // }
+
     try {
         const allRents = [];
         const query = await connection.query(`SELECT * FROM rentals`);
 
         console.log(query.rows.length);
 
-        for (let i = 0; i < query.rows.length; i ++) {
+        for (let i = 0; i < query.rows.length; i++) {
             const { id, customerId, gameId, rentDate,
                 daysRented, returnDate, originalPrice, delayFee } = query.rows[i];
 
@@ -80,6 +87,7 @@ app.post("/rentals", async (req, res) => {
 
     const { customerId, gameId, daysRented } = req.body;
     const rentDate = dayjs().format('YYYY-MM-DD');
+    console.log(typeof rentDate);
     const returnDate = null;
     const delayFee = null;
 
@@ -117,6 +125,39 @@ app.post("/rentals", async (req, res) => {
         res.status(500).send("Ocorreu um erro ao inserir um aluguel");
     }
 })
+
+app.post("/rentals/:id/return", async (req, res) => {
+    const { id } = req.params;
+    const returnDate = dayjs().format('YYYY-MM-DD');
+    try {
+        const query = await connection.query(`SELECT * FROM rentals WHERE id=$1`, [id]);
+        const { rentDate, daysRented, originalPrice } = query.rows[0];
+        const dateStart = rentDate.toISOString().slice(0, 10);
+        const delayFee = 0;
+
+        let dif = new Date(returnDate).getTime() - new Date(dateStart).getTime();
+        if (dif > daysRented) delayFee = (dif - daysRented) * originalPrice;
+
+        await connection.query(`
+        UPDATE rentals
+        SET 
+        "returnDate" = $1,
+        "delayFee" = $2
+        WHERE id=$3`, [returnDate, delayFee, id]);
+        res.sendStatus(200);
+    }
+
+    catch (e) {
+        console.log(e);
+        res.status(500).send("Ocorreu um erro ao finalizar um aluguel");
+    }
+
+});
+
+
+
+
+
 
 
 
