@@ -100,6 +100,8 @@ export async function updateRentals (req, res) {
         const dateStart = rentDate.toISOString().slice(0, 10);
         const delayFee = 0;
 
+        // FALTOU CONVERTER PARA DIAS
+
         let dif = new Date(returnDate).getTime() - new Date(dateStart).getTime();
         if (dif > daysRented) delayFee = (dif - daysRented) * originalPrice;
 

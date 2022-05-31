@@ -1,11 +1,15 @@
 import connection from "./../database.js";
 
 export async function getGames(req, res) {
+    // FALTOU PEGAR O NOME DA CATEGORIA E MANDAR NO GET;
+    // USAR O JOIN PRA PEGAR ESSA INFORMAÇÃO
+
+    // ESTUDAR LIVE CODING, USO DE PARAMS E WHERECLAUSES
     const nome = req.query.name;
     try {
         if (nome !== undefined) {
             const query = await connection.query(`SELECT * FROM games WHERE name LIKE '${nome}%'`);
-            res.send(query.rows);
+            res.send(query.rows);   // USAR ILIKE, PRA NÃO CONSIDERAR MAIUSCULO/MINUSCULO
         }
         else {
             const query = await connection.query(`SELECT * FROM games`);
@@ -19,6 +23,8 @@ export async function getGames(req, res) {
 }
 
 export async function postGames(req, res) {
+
+    // FALTOU VALIDAÇÃO DO JOI
 
     const { name, image, stockTotal, categoryId, pricePerDay } = req.body;
 
