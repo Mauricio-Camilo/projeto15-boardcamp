@@ -97,7 +97,7 @@ export async function updateRentals (req, res) {
 
         const query = await connection.query(`SELECT * FROM rentals WHERE id=$1`, [id]);
         const { rentDate, daysRented, originalPrice } = query.rows[0];
-        const dateStart = rentDate.toISOString().slice(0, 10);
+        let dateStart = rentDate.toISOString().slice(0, 10);
         const delayFee = 0;
 
         // FALTOU CONVERTER PARA DIAS

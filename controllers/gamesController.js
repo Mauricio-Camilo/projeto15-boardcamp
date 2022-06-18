@@ -1,20 +1,30 @@
 import connection from "./../database.js";
 
 export async function getGames(req, res) {
-    // FALTOU PEGAR O NOME DA CATEGORIA E MANDAR NO GET;
-    // USAR O JOIN PRA PEGAR ESSA INFORMAÇÃO
+    
+    const {name} = req.query;
 
-    // ESTUDAR LIVE CODING, USO DE PARAMS E WHERECLAUSES
-    const nome = req.query.name;
+    // Essa variável vai determinar o que será preenchido no meu select
+    let whereClause = "";
+
+    // Aqui são os parametros que serão inseridos na query de forma dinâmica
+    const params = [];
+
+    if (name) {
+        params.push(`${name}%`) // Aqui é um parâmetro do tipo LIKE, que começa com as letras de name
+        whereClause = `WHERE g.name ILIKE $${params.length}`;
+    }
+    /* O ILIKE funciona como case insensitive. O where clause só é preenchido se é passado o req.query;
+    A quantidade de parâmetros corresponde a quantidade de queries passadas, por isso é dinãmico*/
+
     try {
-        if (nome !== undefined) {
-            const query = await connection.query(`SELECT * FROM games WHERE name LIKE '${nome}%'`);
-            res.send(query.rows);   // USAR ILIKE, PRA NÃO CONSIDERAR MAIUSCULO/MINUSCULO
-        }
-        else {
-            const query = await connection.query(`SELECT * FROM games`);
+            const query = await connection.query(`
+            SELECT g.*, c.name as "categoryName" FROM games g
+            JOIN categories c ON g."categoryId" = c.id
+            ${whereClause}
+            `, params);
             res.send(query.rows);
-        }
+        
     }
     catch (e) {
         console.log(e);
