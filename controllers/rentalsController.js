@@ -136,3 +136,4 @@ export async function deleteRentals (req, res) {
         res.status(500).send("Ocorreu um erro ao deletar um aluguel");
     }
 }
+
