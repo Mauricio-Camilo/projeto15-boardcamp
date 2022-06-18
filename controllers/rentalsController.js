@@ -1,13 +1,13 @@
 import connection from "../database.js";
 import dayjs from "dayjs";
 
-export async function getRentals (req, res) {
+export async function getRentals(req, res) {
 
     /* Nesse caso, a query carrega dois parâmetros opcionais, então cada parâmetro carrega uma condição
     Como teremos mais de uma condição, um array auxiliar chamado conditions vai pegar esses parâmetros,
-    por meio da função join, ela vai conseguir unir as duas condições no whereClauses*/ 
+    por meio da função join, ela vai conseguir unir as duas condições no whereClauses*/
 
-    const {customerId, gameId} = req.query;
+    const { customerId, gameId } = req.query;
 
     let whereClauses = "";
     const params = [];
@@ -34,20 +34,22 @@ export async function getRentals (req, res) {
         Poderia fazer um map direto no res.send, mas o código não fica legível.
         Usando essa abordagem, é possível fazer a iteração do result*/
 
-        const result = await connection.query({text:`
+        const result = await connection.query({
+            text: `
         SELECT r.*, c.name AS customer, g.name AS game, ca.id AS "categoryId", ca.name AS "category" FROM rentals r
         JOIN customers c ON r."customerId" = c.id
         JOIN games g ON r."gameId" = g.id
         JOIN categories ca ON g."categoryId" = ca.id
         ${whereClauses}
-        `, rowMode: "array"}, params);
+        `, rowMode: "array"
+        }, params);
 
         res.send(result.rows.map(mapRentalArrays));
 
         function mapRentalArrays(row) {
             const [id, customerId, gameId, rentDate, daysRented,
                 returnDate, originalPrice, delayFee, customer,
-            game, categoryId, category] = row;
+                game, categoryId, category] = row;
             return {
                 id,
                 customerId,
@@ -69,10 +71,6 @@ export async function getRentals (req, res) {
                 }
             }
         }
-
-  
-
-        
     }
     catch (e) {
         console.log(e);
@@ -80,31 +78,28 @@ export async function getRentals (req, res) {
     }
 }
 
-export async function postRentals (req, res) {
+export async function postRentals(req, res) {
     const { customerId, gameId, daysRented } = req.body;
-    const rentDate = dayjs().format('YYYY-MM-DD');
-    const returnDate = null;
-    const delayFee = null;
 
     try {
         if (daysRented < 0) return res.sendStatus(400);
 
         const idgame = await connection.query(
             `SELECT * FROM games WHERE id=$1`, [gameId]);
-        if (idgame.rows.length === 0) return res.sendStatus(400);
+        if (idgame.rowCount === 0) return res.sendStatus(400);
 
         const originalPrice = idgame.rows[0].pricePerDay * daysRented;
 
         const iduser = await connection.query(
             `SELECT * FROM customers WHERE id=$1`, [customerId]);
-        if (iduser.rows.length === 0) return res.sendStatus(400);
+        if (iduser.rowCount === 0) return res.sendStatus(400);
 
         const query = await connection.query(
             `INSERT INTO rentals ("customerId", "gameId", "rentDate", "daysRented",
              "returnDate","originalPrice","delayFee") 
-            VALUES ($1,$2,$3,$4,$5,$6,$7)`,
-            [customerId, gameId, rentDate, daysRented, returnDate,
-                originalPrice, delayFee]);
+            VALUES ($1,$2,NOW(),$3,null,$4,null)`,
+            [customerId, gameId, daysRented, originalPrice]);
+
         res.sendStatus(201);
     }
     catch (e) {
@@ -113,33 +108,38 @@ export async function postRentals (req, res) {
     }
 }
 
-export async function updateRentals (req, res) {
+export async function updateRentals(req, res) {
+
     const { id } = req.params;
-    const returnDate = dayjs().format('YYYY-MM-DD');
 
     try {
-        const idRental = await connection.query(
-            `SELECT * FROM rentals WHERE id=$1`, [id]);
-        if (idRental.rows.length === 0) return res.sendStatus(404);
-        if (idRental.rows[0].returnDate !== null) return res.sendStatus(400);
+        const rental = await connection.query(`SELECT * FROM rentals WHERE id=$1`, [id]);
+        if (rental.rowCount === 0) return res.sendStatus(404);
 
-        const query = await connection.query(`SELECT * FROM rentals WHERE id=$1`, [id]);
-        const { rentDate, daysRented, originalPrice } = query.rows[0];
-        let dateStart = rentDate.toISOString().slice(0, 10);
-        const delayFee = 0;
+        if (rental.rows[0].returnDate !== null) return res.sendStatus(400);
 
-        // FALTOU CONVERTER PARA DIAS
+        else {
 
-        let dif = new Date(returnDate).getTime() - new Date(dateStart).getTime();
-        if (dif > daysRented) delayFee = (dif - daysRented) * originalPrice;
+            const { rentDate, daysRented, originalPrice } = rental.rows[0];
 
-        await connection.query(`
-        UPDATE rentals
-        SET 
-        "returnDate" = $1,
-        "delayFee" = $2
-        WHERE id=$3`, [returnDate, delayFee, id]);
-        res.sendStatus(200);
+            let diff = new Date().getTime() - new Date(rentDate).getTime();
+            let difInDays = Math.floor(diff / (24 * 3600 * 1000));
+
+            let delayFee = 0;
+
+            if (difInDays > daysRented) delayFee = (difInDays - daysRented) * originalPrice;
+
+            console.log("delayFee: ",delayFee);
+
+            await connection.query(`
+            UPDATE rentals
+            SET 
+            "returnDate" = NOW(),
+            "delayFee" = $1
+            WHERE id=$2`, [delayFee, id]);
+            
+            res.sendStatus(200);
+        }
     }
 
     catch (e) {
@@ -148,7 +148,7 @@ export async function updateRentals (req, res) {
     }
 }
 
-export async function deleteRentals (req, res) {
+export async function deleteRentals(req, res) {
     const { id } = req.params;
     try {
         const idRental = await connection.query(
