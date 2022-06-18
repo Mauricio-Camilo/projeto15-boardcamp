@@ -2,27 +2,53 @@ import connection from "../database.js";
 import dayjs from "dayjs";
 
 export async function getRentals (req, res) {
+
+    /* Nesse caso, a query carrega dois parâmetros opcionais, então cada parâmetro carrega uma condição
+    Como teremos mais de uma condição, um array auxiliar chamado conditions vai pegar esses parâmetros,
+    por meio da função join, ela vai conseguir unir as duas condições no whereClauses*/ 
+
+    const {customerId, gameId} = req.query;
+
+    let whereClauses = "";
+    const params = [];
+    const conditions = [];
+
+    if (customerId) {
+        params.push(customerId);
+        conditions.push(`rentals."customerId" = $${params.length}`);
+    }
+
+    if (gameId) {
+        params.push(gameId);
+        conditions.push(`rentals."gameId" = $${params.length}`);
+    }
+
+    if (params.length > 0) {
+        whereClauses = `WHERE ${conditions.join(" AND ")}`
+    }
+
     try {
         const allRents = [];
-        const query = await connection.query(`SELECT * FROM rentals`);
 
-        for (let i = 0; i < query.rows.length; i++) {
-            const { id, customerId, gameId, rentDate,
-                daysRented, returnDate, originalPrice, delayFee } = query.rows[i];
+        /* Nessa query foi criada um objeto com text e rowMode, para funcionar a iteração.
+        Poderia fazer um map direto no res.send, mas o código não fica legível.
+        Usando essa abordagem, é possível fazer a iteração do result*/
 
-            const idGame = await connection.query(
-                `SELECT * FROM games WHERE id=$1`, [query.rows[0].gameId]);
-            const game = idGame.rows[0];
+        const result = await connection.query({text:`
+        SELECT r.*, c.name AS customer, g.name AS game, ca.id AS "categoryId", ca.name AS "category" FROM rentals r
+        JOIN customers c ON r."customerId" = c.id
+        JOIN games g ON r."gameId" = g.id
+        JOIN categories ca ON g."categoryId" = ca.id
+        ${whereClauses}
+        `, rowMode: "array"}, params);
 
-            const categoryName = await connection.query(
-                `SELECT * FROM categories WHERE id=$1`, [game.categoryId]);
-            const category = categoryName.rows[0];
+        res.send(result.rows.map(mapRentalArrays));
 
-            const idUser = await connection.query(
-                `SELECT * FROM customers WHERE id=$1`, [query.rows[0].customerId]);
-            const customer = idUser.rows[0];
-
-            let rentData = {
+        function mapRentalArrays(row) {
+            const [id, customerId, gameId, rentDate, daysRented,
+                returnDate, originalPrice, delayFee, customer,
+            game, categoryId, category] = row;
+            return {
                 id,
                 customerId,
                 gameId,
@@ -32,19 +58,21 @@ export async function getRentals (req, res) {
                 originalPrice,
                 delayFee,
                 customer: {
-                    id: customer.id,
-                    name: customer.name
+                    id: customerId,
+                    name: customer
                 },
                 game: {
-                    id: game.id,
-                    name: game.name,
-                    categoryId: game.categoryId,
+                    id: gameId,
+                    name: game,
+                    categoryId,
                     categoryName: category.name
                 }
-            };
-            allRents.push(rentData);
+            }
         }
-        res.send(allRents);
+
+  
+
+        
     }
     catch (e) {
         console.log(e);
