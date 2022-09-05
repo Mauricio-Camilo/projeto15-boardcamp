@@ -21,7 +21,7 @@ This is a back-end application developed for users to get their favorite games w
 ```bash
 npm i
 ```
-3. Run the front-end with
+3. Run the back-end with
 ```bash
 npm run dev
 ```
